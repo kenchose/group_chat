@@ -9,38 +9,97 @@
     <link rel="stylesheet" href="/css/style.css">
     <script type='text/javascript' src="/socket.io/socket.io.js"></script>
     <script type='text/javascript'>
-        $(document).ready(() => {
-            function userName() {
-                let name = prompt('The page at https://localhost:8000 says: \nYour name')
-                console.log(name)
-            }
-            // userName();
-
+        $(document).ready(() => {      
+            $('#messageArea').hide();      
             let socket = io.connect(); 
-            // socket.on('hello', (data) => { 
-            //     console.log(data.msg)
-            //     socket.emit('thank you', {msg: 'Thanks for connectin with me'})
-            // })
+            let $userForm = $('#userForm');
+            let $username = $('#username');
+            let $messageArea = $('#messageArea')
+            let $messageForm = $('#messageForm');
+            let $message = $('#message');
+            let $chat = $('#chat');
+            // let $userFormArea = $('#userFormArea');
+            // let $users = $('#users');
 
+
+            //user login 
+            $userForm.submit((e) => {
+                e.preventDefault();
+                socket.emit('new user', {
+                    username: $username.val() 
+                })
+                $username.val('')
+            })
+
+
+            //online users
+            socket.on('get users', data => {
+                if (data) {
+                    $userForm.hide();
+                    $messageArea.show();
+                }
+                let all_users = data.new_user
+                let user = ' '
+                for (let i = 0; i < all_users.length; i++) {
+                   user += '<li class="list-group-item d-inline-block">' + all_users[i] + '</li>'
+                //    user += '<li class="list-group-item d-inline-block">' + all_users[i] + '</li>'
+                }
+                $('#users').html(user)
+            })
+
+
+            // send message
+            $messageForm.submit((e) => {
+                e.preventDefault();
+                socket.emit('send message', { 
+                    message: $message.val() //emit message to the server. Message is from the textarea
+                })
+                $message.val(''); //clears textarea
+            })
+
+            //message chat
+            socket.on('new message', (data) => {
+                console.log(data.msg) //did message data come through???
+                // $chat.append('<div class="chat">' + data.msg + '</div>')
+                let message = ''
+                let all_messages = data.msg
+                for (let i = 0; i < all_messages.length; i++) {
+                    message += "<div id='chat'>" + all_messages[i] + "</div>"
+                }
+                $chat.html(message)
+            })
         })
-        </script>
+    </script>
     <title>Group Chat</title>
 </head>
 <body>
-    <div class="container">
-        <div class="row">
+    <div class="container">        
+        <div id="userFormArea" class='row'>
+            <div class="col-md-8 offset-md-2">
+                <form id='userForm'>
+                    <div class="form-group text-center">
+                        <label class='label-group'><h2>Enter Username</h2></label>
+                        <input type='text' name='username' class='form-control' id='username'>
+                        <button type="submit" class='btn btn-primary float-right mt-1'>Login</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="container" id='messageArea'>
+        <div class="row" >
             <div class="col-4">
-                <div class="onlineUsers">
-                    <h2>Online Users</h2>
-                    <ul class='list-group' id='users'></ul>
-                </div>
+                <h2>Online Users</h2>
+                <ul id='users' class='list-group'>
+                    <!-- <li> all users </li> -->
+                </ul>
             </div>
             <div class="col-8">
-                <div class="chatRoom" id='chat'></div>
-                <form id='form message'>
+                <div class="chat" id='chat'></div>
+                <form id='messageForm'>
                     <div class="form-group">
                         <label class='label-group'><h2>Enter message</h2></label>
-                        <textarea class='form-control' id='message'cols="25" rows="4"></textarea>
+                        <textarea class='form-control' id='message' cols="20" rows="4"></textarea>
                         <button type="submit" class='btn btn-primary float-right mt-1'>Send message</button>
                     </div>
                 </form>
